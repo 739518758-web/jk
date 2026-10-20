@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>越南服基址菜单 - 三玖内部</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
+body{background:transparent;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:#eee;overflow:hidden}
+#menu{width:100%;height:100%;background:linear-gradient(160deg,#1a1a2e,#16213e 50%,#0f3460);border-radius:14px;padding:10px;display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,.5)}
+.header{text-align:center;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,.1);margin-bottom:8px}
+.header h2{font-size:15px;font-weight:600;color:#00d4ff;letter-spacing:1px}
+.header .author{font-size:12px;color:#ff6b9d;margin-top:3px;letter-spacing:2px;font-weight:500}
+.addr-box{background:rgba(0,0,0,.25);border-radius:8px;padding:6px 8px;margin-bottom:8px;font-size:11px;line-height:1.5;max-height:90px;overflow-y:auto}
+.addr-box .base{color:#00ff9d;font-weight:600;margin-bottom:3px}
+.addr-item{display:flex;justify-content:space-between;padding:1px 0}
+.addr-item span:first-child{color:#aaa}
+.addr-item span:last-child{color:#fff;font-family:monospace;font-size:10px}
+.btn-group{display:grid;grid-template-columns:1fr 1fr;gap:6px;flex:1;overflow-y:auto;padding-bottom:4px}
+.btn{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:8px;color:#fff;font-size:12px;font-weight:500;padding:9px 4px;text-align:center}
+.btn:active{background:rgba(0,212,255,.25);border-color:#00d4ff;transform:scale(.97)}
+.btn.primary{background:linear-gradient(135deg,#00d4ff,#0099cc);border:none;color:#001a22;font-weight:600}
+.btn.success{background:rgba(0,200,100,.15);border-color:rgba(0,200,100,.3);color:#00e676}
+.btn.warning{background:rgba(255,180,0,.15);border-color:rgba(255,180,0,.3);color:#ffc107}
+.btn.danger{background:rgba(255,60,60,.15);border-color:rgba(255,60,60,.3);color:#ff6b6b}
+.btn.info{background:rgba(100,150,255,.15);border-color:rgba(100,150,255,.3);color:#82b1ff}
+.footer{text-align:center;font-size:11px;color:#ff6b9d;margin-top:6px;letter-spacing:1px;font-weight:500}
+.sub{display:none}
+.sub .btn{margin-bottom:5px}
+.status{font-size:11px;color:#aaa;text-align:center;margin:4px 0;min-height:16px}
+</style>
+</head>
+<body>
+<div id="menu">
+  <div class="header">
+    <h2>越南服 · 基址菜单</h2>
+    <div class="author">三玖内部</div>
+  </div>
+
+  <div class="addr-box" id="addrBox"><div class="base">正在获取基址...</div></div>
+  <div class="status" id="status">就绪</div>
+
+  <!-- 主菜单 -->
+  <div class="btn-group" id="mainBtns">
+    <div class="btn primary" onclick="refreshAddr()">刷新地址</div>
+    <div class="btn" onclick="showReadMenu()">查看数值</div>
+
+    <div class="btn success" onclick="showPatchMenu(0)">修改字节①</div>
+    <div class="btn success" onclick="showPatchMenu(1)">修改字节②</div>
+    <div class="btn success" onclick="showPatchMenu(2)">修改字节③</div>
+    <div class="btn success" onclick="showPatchMenu(3)">修改字节④</div>
+
+    <div class="btn info" onclick="oneClickPatch(0,'C0035FD6')">①→RET</div>
+    <div class="btn info" onclick="oneClickPatch(1,'C0035FD6')">②→RET</div>
+    <div class="btn info" onclick="oneClickPatch(2,'C0035FD6')">③→RET</div>
+    <div class="btn info" onclick="oneClickPatch(3,'C0035FD6')">④→RET</div>
+
+    <div class="btn info" onclick="oneClickPatch(0,'200080D2C0035FD6')">①返回真</div>
+    <div class="btn info" onclick="oneClickPatch(1,'200080D2C0035FD6')">②返回真</div>
+    <div class="btn info" onclick="oneClickPatch(2,'200080D2C0035FD6')">③返回真</div>
+    <div class="btn info" onclick="oneClickPatch(3,'200080D2C0035FD6')">④返回真</div>
+
+    <div class="btn warning" onclick="showSearchMenu()">精确搜索</div>
+    <div class="btn warning" onclick="showNearbyMenu()">邻近搜索</div>
+    <div class="btn warning" onclick="refineSearch()">二次搜索</div>
+    <div class="btn warning" onclick="showResults()">查看结果</div>
+    <div class="btn warning" onclick="editAllResults()">全部修改</div>
+    <div class="btn warning" onclick="toggleFreeze()">冻结/解冻</div>
+    <div class="btn danger" onclick="clearResults()">清除结果</div>
+    <div class="btn success" onclick="restoreAllBytes()">恢复原始字节</div>
+  </div>
+
+  <!-- 子菜单：读取类型 -->
+  <div class="sub" id="typeSelect">
+    <div style="text-align:center;margin-bottom:6px;color:#00d4ff;font-size:13px">选择读取类型</div>
+    <div class="btn" onclick="doRead('I32')">Int32</div>
+    <div class="btn" onclick="doRead('F32')">Float</div>
+    <div class="btn" onclick="doRead('F64')">Double</div>
+    <div class="btn danger" onclick="backToMain()">返回</div>
+  </div>
+
+  <!-- 子菜单：精确搜索类型 -->
+  <div class="sub" id="searchTypeSelect">
+    <div style="text-align:center;margin-bottom:6px;color:#00d4ff;font-size:13px">选择搜索类型</div>
+    <div class="btn" onclick="doSearch('I32')">Int32</div>
+    <div class="btn" onclick="doSearch('F32')">Float (F32)</div>
+    <div class="btn" onclick="doSearch('F64')">Double</div>
+    <div class="btn" onclick="doSearch('I16')">Int16</div>
+    <div class="btn danger" onclick="backToMain()">返回</div>
+  </div>
+
+  <div class="footer">三玖内部</div>
+</div>
+
+<script>
+/* ========== 配置 ========== */
+var offsets = [0x02FF1A00, 0x02FF3080, 0x02E8A4F4, 0x062BD138];
+var originalBytes = ["E603371E", "C0035FD6", "21208052", "C0035FD6"];
+/* ======================== */
+
+var currentAddrs = [];
+var freezeTimer = null;
+var freezeType = "F32";
+var lastSearchType = "F32";
+
+function setStatus(t){ document.getElementById("status").innerText = t; }
+
+function getBase(){
+  try{ return Number(h5gg.getRangesList(0)[0].start); }catch(e){ return 0; }
+}
+
+function calcAddrs(){
+  var base = getBase();
+  currentAddrs = offsets.map(o => base + o);
+  return base;
+}
+
+function refreshAddr(){
+  var base = calcAddrs();
+  var html = '<div class="base">当前基址: 0x' + base.toString(16).toUpperCase() + '</div>';
+  for(var i=0;i<4;i++){
+    html += '<div class="addr-item"><span>地址'+(i+1)+'</span><span>0x'+currentAddrs[i].toString(16).toUpperCase()+'</span></div>';
+  }
+  document.getElementById("addrBox").innerHTML = html;
+  setStatus("地址已刷新");
+}
+
+function patchBytes(addr, hex){
+  hex = hex.replace(/\s+/g,"").toUpperCase();
+  for(var i=0;i<hex.length/2;i++){
+    h5gg.setValue(addr+i, parseInt(hex.substr(i*2,2),16), "U8");
+  }
+}
+
+function showPatchMenu(idx){
+  var addr = currentAddrs[idx];
+  var cur = "";
+  try{
+    for(var i=0;i<4;i++) cur += ("0"+Number(h5gg.getValue(addr+i,"U8")).toString(16)).slice(-2).toUpperCase();
+  }catch(e){ cur = originalBytes[idx]; }
+
+  var neu = prompt("修改地址"+(idx+1)+"\n当前: "+cur+"\n原始: "+originalBytes[idx]+"\n\n输入新字节:", cur);
+  if(!neu) return;
+  try{
+    patchBytes(addr, neu);
+    alert("修改成功！\n新字节: "+neu.replace(/\s+/g,"").toUpperCase());
+    setStatus("地址"+(idx+1)+" 字节已修改");
+  }catch(e){ alert("失败: "+e); }
+}
+
+function oneClickPatch(idx, bytes){
+  try{
+    patchBytes(currentAddrs[idx], bytes);
+    setStatus("地址"+(idx+1)+" 已一键修改");
+    alert("地址"+(idx+1)+" 修改成功\n字节: "+bytes);
+  }catch(e){ alert("失败: "+e); }
+}
+
+function restoreAllBytes(){
+  try{
+    for(var i=0;i<4;i++) patchBytes(currentAddrs[i], originalBytes[i]);
+    alert("四个地址已全部恢复原始字节");
+    setStatus("已恢复原始字节");
+  }catch(e){ alert("恢复失败: "+e); }
+}
+
+/* ===== 搜索相关 ===== */
+function showSearchMenu(){
+  document.getElementById("mainBtns").style.display="none";
+  document.getElementById("searchTypeSelect").style.display="block";
+}
+
+function doSearch(type){
+  lastSearchType = type;
+  var val = prompt("精确搜索 ("+type+")\n支持范围 例如 10~50 或 1.5~3.2\n输入数值:","");
+  if(val===null||val===""){ backToMain(); return; }
+  try{
+    h5gg.clearResults();
+    h5gg.searchNumber(val, type, "0x0", "0xFFFFFFFF00000000");
+    var c = h5gg.getResultsCount();
+    setStatus("搜索完成: "+c+" 个结果 ("+type+")");
+    alert("搜索完成！\n类型: "+type+"\n找到: "+c+" 个");
+  }catch(e){ alert("搜索失败: "+e); }
+  backToMain();
+}
+
+function showNearbyMenu(){
+  var val = prompt("邻近搜索 (联合搜索)\n先确保已有搜索结果\n输入邻近数值:","");
+  if(val===null||val==="") return;
+  var range = prompt("邻近范围 (字节):","0x100");
+  if(range===null||range==="") return;
+  try{
+    h5gg.searchNearby(val, lastSearchType, range);
+    var c = h5gg.getResultsCount();
+    setStatus("邻近搜索完成: "+c+" 个");
+    alert("邻近搜索完成！\n剩余: "+c+" 个结果");
+  }catch(e){ alert("失败: "+e); }
+}
+
+function refineSearch(){
+  var val = prompt("二次搜索 / 过滤\n当前类型: "+lastSearchType+"\n输入新数值或范围:","");
+  if(val===null||val==="") return;
+  try{
+    h5gg.searchNumber(val, lastSearchType, "0x0", "0xFFFFFFFF00000000");
+    var c = h5gg.getResultsCount();
+    setStatus("二次搜索完成: "+c+" 个");
+    alert("二次搜索完成！\n剩余: "+c+" 个结果");
+  }catch(e){ alert("失败: "+e); }
+}
+
+function showResults(){
+  var c = h5gg.getResultsCount();
+  if(c<=0){ alert("没有搜索结果"); return; }
+  var max = Math.min(c, 30);
+  var res = h5gg.getResults(max, 0);
+  var msg = "前 "+max+" 个结果 (共"+c+"个):\n\n";
+  for(var i=0;i<res.length;i++){
+    msg += (i+1)+". 0x"+Number(res[i].address).toString(16).toUpperCase()+" = "+res[i].value+"\n";
+  }
+  alert(msg);
+}
+
+function editAllResults(){
+  var c = h5gg.getResultsCount();
+  if(c<=0){ alert("没有搜索结果"); return; }
+  var neu = prompt("全部修改\n当前 "+c+" 个结果\n类型: "+lastSearchType+"\n输入新数值:","");
+  if(neu===null||neu==="") return;
+  try{
+    var n = h5gg.editAll(neu, lastSearchType);
+    setStatus("已修改 "+n+" 个");
+    alert("全部修改完成！\n成功: "+n+" 个");
+  }catch(e){ alert("失败: "+e); }
+}
+
+function clearResults(){
+  h5gg.clearResults();
+  setStatus("结果已清除");
+  alert("已清除所有搜索结果");
+}
+
+/* ===== 冻结 ===== */
+function toggleFreeze(){
+  if(freezeTimer){
+    clearInterval(freezeTimer);
+    freezeTimer = null;
+    setStatus("已停止冻结");
+    alert("冻结已停止");
+    return;
+  }
+  var c = h5gg.getResultsCount();
+  if(c<=0){ alert("没有搜索结果，无法冻结"); return; }
+  var val = prompt("冻结数值\n将持续把当前 "+c+" 个结果改成指定值\n输入要冻结的数值:","");
+  if(val===null||val==="") return;
+
+  var results = h5gg.getResults(Math.min(c,200), 0);
+  freezeTimer = setInterval(function(){
+    for(var i=0;i<results.length;i++){
+      try{ h5gg.setValue(results[i].address, val, lastSearchType); }catch(e){}
+    }
+  }, 300);
+  setStatus("冻结中... ("+results.length+"个)");
+  alert("已开始冻结！\n间隔300ms\n点击「冻结/解冻」可停止");
+}
+
+/* ===== 读取 ===== */
+function showReadMenu(){
+  document.getElementById("mainBtns").style.display="none";
+  document.getElementById("typeSelect").style.display="block";
+}
+function doRead(type){
+  var msg = "类型: "+type+"\n\n";
+  for(var i=0;i<4;i++){
+    var v="失败";
+    try{ v=h5gg.getValue(currentAddrs[i],type); }catch(e){}
+    msg += "地址"+(i+1)+": "+v+"\n";
+  }
+  alert(msg);
+  backToMain();
+}
+
+function backToMain(){
+  document.getElementById("typeSelect").style.display="none";
+  document.getElementById("searchTypeSelect").style.display="none";
+  document.getElementById("mainBtns").style.display="grid";
+}
+
+/* 初始化 */
+refreshAddr();
+try{
+  setWindowRect(20,40,340,620);
+  setWindowDrag(0,0,340,48);
+}catch(e){}
+</script>
+</body>
+</html>
