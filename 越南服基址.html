@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>越南服基址菜单</title>
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+}
+body {
+    background: transparent;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: #eee;
+    overflow: hidden;
+}
+#menu {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(160deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    border-radius: 16px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+}
+.header {
+    text-align: center;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    margin-bottom: 14px;
+}
+.header h2 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #00d4ff;
+    letter-spacing: 1px;
+}
+.header .author {
+    font-size: 13px;
+    color: #ff6b9d;
+    margin-top: 6px;
+    font-weight: 500;
+    letter-spacing: 2px;
+}
+.header p {
+    font-size: 12px;
+    color: #888;
+    margin-top: 4px;
+}
+.addr-box {
+    background: rgba(0,0,0,0.25);
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 14px;
+    font-size: 13px;
+    line-height: 1.7;
+}
+.addr-box .base {
+    color: #00ff9d;
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+.addr-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 3px 0;
+}
+.addr-item span:first-child {
+    color: #aaa;
+}
+.addr-item span:last-child {
+    color: #fff;
+    font-family: monospace;
+}
+.btn-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    flex: 1;
+}
+.btn {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 10px;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 12px 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+}
+.btn:active {
+    background: rgba(0,212,255,0.25);
+    border-color: #00d4ff;
+    transform: scale(0.97);
+}
+.btn.primary {
+    background: linear-gradient(135deg, #00d4ff, #0099cc);
+    border: none;
+    color: #001a22;
+    font-weight: 600;
+}
+.btn.danger {
+    background: rgba(255,60,60,0.15);
+    border-color: rgba(255,60,60,0.3);
+    color: #ff6b6b;
+}
+.footer {
+    text-align: center;
+    font-size: 12px;
+    color: #ff6b9d;
+    margin-top: 12px;
+    letter-spacing: 1px;
+    font-weight: 500;
+}
+.type-select {
+    display: none;
+    margin-top: 10px;
+}
+.type-select .btn {
+    margin-bottom: 8px;
+}
+</style>
+</head>
+<body>
+<div id="menu">
+    <div class="header">
+        <h2>越南服 · 基址菜单</h2>
+        <div class="author">三玖制作</div>
+        <p>点击下方按钮进行操作</p>
+    </div>
+
+    <div class="addr-box" id="addrBox">
+        <div class="base">正在获取基址...</div>
+    </div>
+
+    <div class="btn-group" id="mainBtns">
+        <div class="btn primary" onclick="refreshAddr()">刷新地址</div>
+        <div class="btn" onclick="showReadMenu()">查看数值</div>
+        <div class="btn" onclick="showWriteMenu(0)">修改地址①</div>
+        <div class="btn" onclick="showWriteMenu(1)">修改地址②</div>
+        <div class="btn" onclick="showWriteMenu(2)">修改地址③</div>
+        <div class="btn" onclick="showWriteMenu(3)">修改地址④</div>
+    </div>
+
+    <div class="type-select" id="typeSelect">
+        <div style="text-align:center;margin-bottom:10px;color:#00d4ff;" id="typeTitle">选择类型</div>
+        <div class="btn" onclick="doAction('I32')">Int32 (整数)</div>
+        <div class="btn" onclick="doAction('F32')">Float (单精度)</div>
+        <div class="btn" onclick="doAction('F64')">Double (双精度)</div>
+        <div class="btn danger" onclick="backToMain()">返回</div>
+    </div>
+
+    <div class="footer">三玖制作</div>
+</div>
+
+<script>
+/* ========== 配置区 ========== */
+var offsets = [
+    0x02FF1A00,
+    0x02FF3080,
+    0x02E8A4F4,
+    0x062BD138
+];
+/* =========================== */
+
+var currentAddrs = [];
+var currentAction = null;
+var currentType = null;
+
+function getBase() {
+    try {
+        var modules = h5gg.getRangesList(0);
+        return Number(modules[0].start);
+    } catch(e) {
+        return 0;
+    }
+}
+
+function calcAddrs() {
+    var base = getBase();
+    currentAddrs = offsets.map(function(o){ return base + o; });
+    return base;
+}
+
+function refreshAddr() {
+    var base = calcAddrs();
+    var html = '<div class="base">当前基址: 0x' + base.toString(16).toUpperCase() + '</div>';
+    for(var i=0; i<4; i++){
+        html += '<div class="addr-item"><span>地址' + (i+1) + '</span><span>0x' + currentAddrs[i].toString(16).toUpperCase() + '</span></div>';
+    }
+    document.getElementById('addrBox').innerHTML = html;
+}
+
+function showReadMenu() {
+    currentAction = 'read';
+    document.getElementById('mainBtns').style.display = 'none';
+    document.getElementById('typeSelect').style.display = 'block';
+    document.getElementById('typeTitle').innerText = '选择读取类型';
+}
+
+function showWriteMenu(index) {
+    currentAction = index;
+    document.getElementById('mainBtns').style.display = 'none';
+    document.getElementById('typeSelect').style.display = 'block';
+    document.getElementById('typeTitle').innerText = '修改地址' + (index+1) + ' - 选择类型';
+}
+
+function backToMain() {
+    document.getElementById('typeSelect').style.display = 'none';
+    document.getElementById('mainBtns').style.display = 'grid';
+}
+
+function doAction(type) {
+    currentType = type;
+    if(currentAction === 'read'){
+        var msg = '类型: ' + type + '\n\n';
+        for(var i=0; i<4; i++){
+            var val = '读取失败';
+            try { val = h5gg.getValue(currentAddrs[i], type); } catch(e){}
+            msg += '地址' + (i+1) + ': ' + val + '\n';
+        }
+        alert(msg);
+    } else {
+        var addr = currentAddrs[currentAction];
+        var curVal = '未知';
+        try { curVal = h5gg.getValue(addr, type); } catch(e){}
+        var newVal = prompt('地址' + (currentAction+1) + ' 当前值: ' + curVal + '\n请输入新数值:', curVal);
+        if(newVal !== null && newVal !== ''){
+            try {
+                h5gg.setValue(addr, newVal, type);
+                alert('修改成功！\n地址: 0x' + addr.toString(16).toUpperCase() + '\n新值: ' + newVal);
+            } catch(e) {
+                alert('修改失败: ' + e);
+            }
+        }
+    }
+    backToMain();
+}
+
+// 初始化
+refreshAddr();
+
+// 设置窗口大小和可拖动区域
+try {
+    setWindowRect(40, 80, 320, 480);
+    setWindowDrag(0, 0, 320, 60);
+} catch(e){}
+</script>
+</body>
+</html>
