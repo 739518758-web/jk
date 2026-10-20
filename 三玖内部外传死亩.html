@@ -49,12 +49,11 @@ html,body{width:100%;height:100%;background:transparent;overflow:hidden;font-fam
   flex-shrink:0;
 }
 
-/* 功能区可滑动，并增加底部空间 */
 .btn-scroll{
   flex:1;
   overflow-y:auto;
   -webkit-overflow-scrolling:touch;
-  padding-bottom:40px;   /* 关键！让最后的按钮能滑出来 */
+  padding-bottom:80px; /* 大幅增加底部空间 */
 }
 
 .btn-group{
@@ -106,8 +105,8 @@ html,body{width:100%;height:100%;background:transparent;overflow:hidden;font-fam
 
   <div class="status" id="status">就绪</div>
 
-  <div class="btn-scroll" id="mainScroll">
-    <div class="btn-group" id="mainBtns">
+  <div class="btn-scroll">
+    <div class="btn-group">
 
       <div class="btn primary" onclick="doAction('refresh')">刷新地址</div>
       <div class="btn" onclick="doAction('read')">查看数值</div>
@@ -119,20 +118,11 @@ html,body{width:100%;height:100%;background:transparent;overflow:hidden;font-fam
 
       <div class="btn success" style="grid-column:span 2" onclick="doAction('oneclick')">一键修改字节（通用）</div>
 
+      <!-- 只保留比较稳定的 RET -->
       <div class="btn info" onclick="doAction('ret',0)">①→RET</div>
       <div class="btn info" onclick="doAction('ret',1)">②→RET</div>
       <div class="btn info" onclick="doAction('ret',2)">③→RET</div>
       <div class="btn info" onclick="doAction('ret',3)">④→RET</div>
-
-      <div class="btn info" onclick="doAction('true',0)">①返回真</div>
-      <div class="btn info" onclick="doAction('true',1)">②返回真</div>
-      <div class="btn info" onclick="doAction('true',2)">③返回真</div>
-      <div class="btn info" onclick="doAction('true',3)">④返回真</div>
-
-      <div class="btn info" onclick="doAction('false',0)">①返回假</div>
-      <div class="btn info" onclick="doAction('false',1)">②返回假</div>
-      <div class="btn info" onclick="doAction('false',2)">③返回假</div>
-      <div class="btn info" onclick="doAction('false',3)">④返回假</div>
 
       <div class="btn warning" onclick="doAction('search')">精确搜索</div>
       <div class="btn warning" onclick="doAction('nearby')">邻近搜索</div>
@@ -144,6 +134,9 @@ html,body{width:100%;height:100%;background:transparent;overflow:hidden;font-fam
       <div class="btn success" onclick="doAction('restore')">恢复原始字节</div>
 
       <div class="btn primary" style="grid-column:span 2" onclick="doAction('reinit')">重新初始化</div>
+
+      <!-- 占位，保证能滑到底 -->
+      <div style="height:30px;grid-column:span 2"></div>
     </div>
   </div>
 
@@ -193,21 +186,14 @@ function patchBytes(addr, hex) {
   }
 }
 
-// 更稳妥的修改（减少闪退）
 function safePatch(idx, bytes) {
   try {
     if (!currentAddrs[idx]) calcAddrs();
-    var addr = currentAddrs[idx];
-
-    // 先尝试读取，确认地址有效
-    try { h5gg.getValue(addr, "U8"); } catch(e) {}
-
-    patchBytes(addr, bytes);
-
+    patchBytes(currentAddrs[idx], bytes);
     setStatus("地址" + (idx+1) + " 修改成功");
     alert("地址" + (idx+1) + " 修改成功\n" + bytes);
   } catch(e) {
-    alert("修改失败（可能无写入权限或地址无效）\n" + e);
+    alert("修改失败（无写入权限或地址无效）\n建议只使用 RET");
     setStatus("修改失败");
   }
 }
@@ -245,8 +231,18 @@ function doAction(type, idx) {
       if (!c) return;
       var i = Number(c) - 1;
       if (i < 0 || i > 3) return alert("只能输入1-4");
-      var o = prompt("1=RET\n2=返回真\n3=返回假\n4=NOP\n5=自定义", "1");
+
+      var o = prompt(
+        "选择补丁类型：\n\n" +
+        "1 = RET（推荐，最稳定）\n" +
+        "2 = 返回真（可能闪退）\n" +
+        "3 = 返回假（可能闪退）\n" +
+        "4 = NOP\n" +
+        "5 = 自定义",
+        "1"
+      );
       if (!o) return;
+
       var bytes = "";
       if (o === "1") bytes = "C0035FD6";
       else if (o === "2") bytes = "200080D2C0035FD6";
@@ -257,12 +253,6 @@ function doAction(type, idx) {
     }
     else if (type === "ret") {
       safePatch(idx, "C0035FD6");
-    }
-    else if (type === "true") {
-      safePatch(idx, "200080D2C0035FD6");
-    }
-    else if (type === "false") {
-      safePatch(idx, "000080D2C0035FD6");
     }
     else if (type === "restore") {
       for (var i = 0; i < 4; i++) {
@@ -331,7 +321,7 @@ function doAction(type, idx) {
       if (c <= 0) return alert("没有结果");
       var val = prompt("冻结成什么值", "");
       if (!val) return;
-      var max = Math.min(c, 60);
+      var max = Math.min(c, 50);
       var res = h5gg.getResults(max, 0);
       freezeTimer = setInterval(function() {
         try {
@@ -339,7 +329,7 @@ function doAction(type, idx) {
             h5gg.setValue(res[i].address, val, lastSearchType);
           }
         } catch(e) {}
-      }, 600);
+      }, 700);
       setStatus("冻结中(" + max + "个)");
       alert("开始冻结前" + max + "个");
     }
@@ -356,11 +346,10 @@ function doAction(type, idx) {
   }
 }
 
-// 初始化
 try {
   refreshAddr();
-  setWindowRect(8, 15, 340, 700);   // 窗口更高一点
-  setWindowDrag(0, 0, 340, 42);
+  setWindowRect(5, 10, 345, 720);
+  setWindowDrag(0, 0, 345, 42);
 } catch(e) {}
 </script>
 </body>
