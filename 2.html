@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>越南服基址 - 三玖内部</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
+html,body{width:100%;height:100%;background:transparent;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:#eee}
+
+#menu{
+  width:100%;height:100%;
+  background:linear-gradient(160deg,#1a1a2e,#16213e 55%,#0f3460);
+  border-radius:14px;
+  padding:12px;
+  display:flex;
+  flex-direction:column;
+}
+
+.header{text-align:center;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,.12);margin-bottom:8px;flex-shrink:0}
+.header h2{font-size:16px;color:#00d4ff;font-weight:600}
+.header .author{font-size:13px;color:#ff6b9d;margin-top:4px;letter-spacing:2px}
+
+.addr-box{
+  background:rgba(0,0,0,.28);
+  border-radius:8px;
+  padding:8px 10px;
+  margin-bottom:8px;
+  font-size:12px;
+  line-height:1.5;
+  flex-shrink:0;
+}
+.addr-box .base{color:#00ff9d;font-weight:600;margin-bottom:4px}
+.addr-item{display:flex;justify-content:space-between;margin:2px 0}
+.addr-item span:last-child{font-family:monospace;font-size:11px}
+
+.status{font-size:12px;color:#aaa;text-align:center;margin-bottom:8px;flex-shrink:0}
+
+.btn-scroll{
+  flex:1;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  padding-bottom:130px;
+}
+
+.btn-group{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:7px;
+}
+
+.btn{
+  background:rgba(255,255,255,.09);
+  border:1px solid rgba(255,255,255,.13);
+  border-radius:8px;
+  color:#fff;
+  font-size:13px;
+  font-weight:500;
+  padding:12px 4px;
+  text-align:center;
+}
+.btn:active{background:rgba(0,212,255,.25);border-color:#00d4ff}
+
+.btn.primary{background:linear-gradient(135deg,#00d4ff,#0099cc);border:none;color:#001a22;font-weight:600}
+.btn.success{background:rgba(0,200,100,.15);border-color:rgba(0,200,100,.3);color:#00e676}
+.btn.info{background:rgba(100,150,255,.15);border-color:rgba(100,150,255,.3);color:#82b1ff}
+.btn.danger{background:rgba(255,60,60,.15);border-color:rgba(255,60,60,.3);color:#ff6b6b}
+.btn.warning{background:rgba(255,180,0,.15);border-color:rgba(255,180,0,.3);color:#ffc107}
+
+.footer{text-align:center;font-size:12px;color:#ff6b9d;margin-top:6px;flex-shrink:0}
+</style>
+</head>
+<body>
+<div id="menu">
+  <div class="header">
+    <h2>越南服 · 基址菜单</h2>
+    <div class="author">三玖内部</div>
+  </div>
+
+  <div class="addr-box" id="addrBox">
+    <div class="base">正在获取基址...</div>
+  </div>
+
+  <div class="status" id="status">就绪</div>
+
+  <div class="btn-scroll">
+    <div class="btn-group">
+
+      <div class="btn primary" onclick="doAction('refresh')">刷新地址</div>
+      <div class="btn" onclick="doAction('read')">查看数值</div>
+
+      <div class="btn success" onclick="doAction('patch',0)">修改字节①</div>
+      <div class="btn success" onclick="doAction('patch',1)">修改字节②</div>
+      <div class="btn success" onclick="doAction('patch',2)">修改字节③</div>
+      <div class="btn success" onclick="doAction('patch',3)">修改字节④</div>
+
+      <div class="btn success" style="grid-column:span 2" onclick="doAction('oneclick')">一键修改字节</div>
+
+      <!-- 最稳定的 RET -->
+      <div class="btn info" onclick="doAction('ret',0)">① → RET</div>
+      <div class="btn info" onclick="doAction('ret',1)">② → RET</div>
+      <div class="btn info" onclick="doAction('ret',2)">③ → RET</div>
+      <div class="btn info" onclick="doAction('ret',3)">④ → RET</div>
+
+      <div class="btn warning" onclick="doAction('search')">搜索 F32</div>
+      <div class="btn warning" onclick="doAction('editall')">全部修改</div>
+      <div class="btn danger" onclick="doAction('clear')">清除结果</div>
+      <div class="btn success" onclick="doAction('restore')">恢复原始字节</div>
+
+      <div class="btn primary" style="grid-column:span 2" onclick="doAction('reinit')">重新初始化</div>
+
+      <div style="height:70px;grid-column:span 2"></div>
+    </div>
+  </div>
+
+  <div class="footer">三玖内部</div>
+</div>
+
+<script>
+var offsets = [0x02FF1A00, 0x02FF3080, 0x02E8A4F4, 0x062BD138];
+var originalBytes = ["E003271E", "C0035FD6", "21208052", "C0035FD6"];  // 最新值
+var currentAddrs = [];
+var lastSearchType = "F32";
+
+function setStatus(t) {
+  try { document.getElementById("status").innerText = t; } catch(e) {}
+}
+
+function getBase() {
+  try { return Number(h5gg.getRangesList(0)[0].start); } catch(e) { return 0; }
+}
+
+function calcAddrs() {
+  var base = getBase();
+  currentAddrs = offsets.map(function(o){ return base + o; });
+  return base;
+}
+
+function refreshAddr() {
+  var base = calcAddrs();
+  var html = '<div class="base">当前基址: 0x' + base.toString(16).toUpperCase() + '</div>';
+  for (var i = 0; i < 4; i++) {
+    html += '<div class="addr-item"><span>地址' + (i+1) + '</span><span>0x' + currentAddrs[i].toString(16).toUpperCase() + '</span></div>';
+  }
+  document.getElementById("addrBox").innerHTML = html;
+  setStatus("地址已刷新");
+}
+
+// 防闪写入函数
+function safePatchBytes(addr, hex) {
+  hex = String(hex).replace(/\s+/g, "").toUpperCase();
+  if (hex.length % 2 !== 0) throw "字节长度必须是偶数";
+
+  // 先检查地址是否可读
+  try {
+    h5gg.getValue(addr, "U8");
+  } catch (e) {
+    throw "地址无法读取，可能无效";
+  }
+
+  // 逐字节写入
+  for (var i = 0; i < hex.length / 2; i++) {
+    var b = parseInt(hex.substr(i * 2, 2), 16);
+    try {
+      h5gg.setValue(addr + i, b, "U8");
+    } catch (e) {
+      throw "写入第 " + (i+1) + " 字节时失败";
+    }
+  }
+}
+
+function safePatch(idx, bytes) {
+  try {
+    if (!currentAddrs[idx]) calcAddrs();
+    safePatchBytes(currentAddrs[idx], bytes);
+    setStatus("地址" + (idx+1) + " 修改成功");
+    alert("地址" + (idx+1) + " 修改成功\n" + bytes);
+  } catch(e) {
+    alert("修改失败（已拦截闪退）\n" + e + "\n\n建议优先使用 RET");
+    setStatus("修改失败");
+  }
+}
+
+function doAction(type, idx) {
+  try {
+    if (type === "refresh") {
+      refreshAddr();
+    }
+    else if (type === "read") {
+      var t = prompt("选择类型\n1=Int32  2=Float  3=Double", "2");
+      if (!t) return;
+      var map = {"1":"I32","2":"F32","3":"F64"};
+      var tp = map[t] || "F32";
+      var msg = "类型: " + tp + "\n\n";
+      for (var i = 0; i < 4; i++) {
+        var v = "失败";
+        try { v = h5gg.getValue(currentAddrs[i], tp); } catch(e) {}
+        msg += "地址" + (i+1) + ": " + v + "\n";
+      }
+      alert(msg);
+    }
+    else if (type === "patch") {
+      // 修复点：正确获取当前地址的机器码字节（以当前原始字节长度为准）
+      var cur = "";
+      var byteLen = originalBytes[idx].length / 2;
+      try {
+        for (var j = 0; j < byteLen; j++) {
+          var valU8 = Number(h5gg.getValue(currentAddrs[idx] + j, "U8"));
+          cur += ("0" + valU8.toString(16)).slice(-2).toUpperCase();
+        }
+      } catch(e) { 
+        cur = originalBytes[idx]; 
+      }
+      
+      var neu = prompt("修改地址"+(idx+1)+"\n当前: "+cur+"\n原始: "+originalBytes[idx]+"\n输入新字节:", cur);
+      if (neu) safePatch(idx, neu);
+    }
+    else if (type === "oneclick") {
+      var c = prompt("输入地址编号 (1~4)", "1");
+      if (!c) return;
+      var i = Number(c) - 1;
+      if (i < 0 || i > 3) return alert("只能输入1~4");
+
+      var o = prompt(
+        "选择补丁：\n\n" +
+        "1 = RET（最稳定，推荐）\n" +
+        "2 = 返回真（可能闪退）\n" +
+        "3 = 返回假（可能闪退）\n" +
+        "4 = NOP\n" +
+        "5 = 自定义",
+        "1"
+      );
+      if (!o) return;
+
+      var bytes = "";
+      if (o === "1") bytes = "C0035FD6";
+      else if (o === "2") bytes = "200080D2C0035FD6";
+      else if (o === "3") bytes = "000080D2C0035FD6";
+      else if (o === "4") bytes = "1F2003D5";
+      else if (o === "5") bytes = prompt("输入自定义字节", originalBytes[i]);
+      if (bytes) safePatch(i, bytes);
+    }
+    else if (type === "ret") {
+      safePatch(idx, "C0035FD6");
+    }
+    else if (type === "restore") {
+      for (var i = 0; i < 4; i++) {
+        try { safePatchBytes(currentAddrs[i], originalBytes[i]); } catch(e) {}
+      }
+      alert("已尝试恢复原始字节");
+      setStatus("已恢复");
+    }
+    else if (type === "search") {
+      var val = prompt("搜索 F32 数值（支持范围 1.5~3.5）", "");
+      if (!val) return;
+      h5gg.clearResults();
+      h5gg.searchNumber(val, "F32", "0x0", "0xFFFFFFFF00000000");
+      var cnt = h5gg.getResultsCount();
+      setStatus("找到 " + cnt + " 个");
+      alert("搜索完成，找到 " + cnt + " 个");
+    }
+    else if (type === "editall") {
+      var c = h5gg.getResultsCount();
+      if (c <= 0) return alert("没有搜索结果");
+      var val = prompt("全部修改为", "");
+      if (!val) return;
+      var n = h5gg.editAll(val, "F32");
+      alert("成功修改 " + n + " 个");
+    }
+    else if (type === "clear") {
+      h5gg.clearResults();
+      setStatus("已清除");
+      alert("结果已清除");
+    }
+    else if (type === "reinit") {
+      calcAddrs();
+      refreshAddr();
+      setStatus("重新初始化完成");
+      alert("已重新初始化");
+    }
+  } catch(e) {
+    alert("出错: " + e);
+    setStatus("出错");
+  }
+}
+
+try {
+  refreshAddr();
+  setWindowRect(5, 10, 340, 730);
+  setWindowDrag(0, 0, 340, 45);
+} catch(e) {}
+</script>
+</body>
+</html>
